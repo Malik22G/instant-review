@@ -4,13 +4,91 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { InstagramIcon, TikTokIcon, YoutubeIcon } from "./Icons";
 import SubmitButton from "./SubmitButton";
+import OpenAI from "openai";
+import axios from "axios";
 
 const Apps = ["Youtube", "Instagram", "Tiktok"] as const;
 export type App = (typeof Apps)[number];
 
+type Message = {
+  text: string;
+  id: string;
+  author: "human" | "ai";
+};
+
 export default function InputForm() {
   const [selectedButton, setSelectedButton] = useState<App>("Youtube");
   const [link, setLink] = useState("");
+  const [prompt, setPrompt] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+
+  const handleSubmit = async () => {
+    if (prompt.trim().length === 0) {
+      console.warn("Prompt is empty.");
+      return;
+    }
+
+    setMessages((currentMessages) => [
+      ...currentMessages,
+      {
+        text: prompt.trim(),
+        id: new Date().toISOString(),
+        author: "human",
+      },
+    ]);
+
+    setPrompt("");
+
+    try {
+      const response = await fetch("/api/completion", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt: prompt.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessages((currentMessages) => [
+          ...currentMessages,
+          {
+            text: data.result,
+            id: new Date().toISOString(),
+            author: "ai",
+          },
+        ]);
+      } else {
+        console.warn("API response error:", data.error?.message);
+      }
+    } catch (error) {
+      console.error("Network or parsing error:", error);
+    }
+  };
+
+  //   useEffect(() => {
+  //     axios
+  //       .post(
+  //         "https://api.openai.com/v1/engines/davinci-codex/completions",
+  //         {
+  //           prompt:
+  //             "Translate the following English text to French: 'Hello, how are you?'",
+  //           max_tokens: 60,
+  //         },
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
+  //           },
+  //         }
+  //       )
+  //       .then((response) => {
+  //         console.log(response.data);
+  //       })
+  //       .catch((error) => {
+  //         console.error("Error calling OpenAI API:", error);
+  //       });
+  //   }, []);
 
   return (
     <>
@@ -21,7 +99,7 @@ export default function InputForm() {
           placeholder="Enter a link here"
           type="url"
           onChange={(event) => {
-            setLink(event.target.value);
+            setPrompt(event.target.value);
           }}
         />
       </div>
@@ -50,12 +128,32 @@ export default function InputForm() {
         </Button>
       </div>
       <div className="flex justify-center mt-4">
-        <SubmitButton
-          onClick={() => {
-            console.log("clicked");
-          }}
-        />
+        <SubmitButton onClick={handleSubmit} />
+      </div>
+      <div className="answers">
+        {messages.map((message) => (
+          <MessageItem key={message.id} message={message} />
+        ))}
       </div>
     </>
+  );
+}
+
+function MessageItem({ message }) {
+  const [text, setText] = useState(
+    message.author === "human" ? message.text : ""
+  );
+
+  useEffect(() => {
+    setTimeout(() => {
+      setText(message.text.slice(0, text.length + 1));
+    }, 10);
+  }, [text, message.text]);
+
+  return (
+    <div className="answer">
+      <div className={`author author-${message.author}`}>{message.author}:</div>
+      <div className="message">{text}</div>
+    </div>
   );
 }
