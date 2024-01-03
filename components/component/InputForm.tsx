@@ -28,19 +28,8 @@ export default function InputForm() {
       return;
     }
 
-    setMessages((currentMessages) => [
-      ...currentMessages,
-      {
-        text: prompt.trim(),
-        id: new Date().toISOString(),
-        author: "human",
-      },
-    ]);
-
-    setPrompt("");
-
     try {
-      const response = await fetch("/api/completion", {
+      const response = await fetch("/api/chatgpt", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -49,16 +38,16 @@ export default function InputForm() {
       });
 
       const data = await response.json();
-
+      console.log(response);
       if (response.ok) {
-        setMessages((currentMessages) => [
-          ...currentMessages,
+        setMessages([
           {
             text: data.result,
             id: new Date().toISOString(),
             author: "ai",
           },
         ]);
+        setPrompt("");
       } else {
         console.warn("API response error:", data.error?.message);
       }

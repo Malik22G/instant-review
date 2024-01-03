@@ -1,4 +1,6 @@
 import InputForm from "./InputForm";
+import OpenAI from "openai";
+import "dotenv/config";
 
 export function HomePage() {
   return (
