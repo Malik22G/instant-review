@@ -1,8 +1,9 @@
 import OpenAI from "openai";
 import { OpenAIStream, StreamingTextResponse } from "ai";
+import "dotenv/config";
 
 const openai = new OpenAI({
-  apiKey: "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",
+  apiKey: `${process.env.OPENAI_API_KEY}`,
 });
 
 export async function POST(req: Request) {
