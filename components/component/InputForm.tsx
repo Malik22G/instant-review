@@ -6,6 +6,7 @@ import { InstagramIcon, TikTokIcon, YoutubeIcon } from "./Icons";
 import SubmitButton from "./SubmitButton";
 import OpenAI from "openai";
 import axios from "axios";
+import { comment } from "postcss";
 
 const Apps = ["Youtube", "Instagram", "Tiktok"] as const;
 export type App = (typeof Apps)[number];
@@ -23,39 +24,17 @@ export default function InputForm() {
   const [messages, setMessages] = useState<Message[]>([]);
 
   const handleSubmit = async () => {
-    if (prompt.trim().length === 0) {
-      console.warn("Prompt is empty.");
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/chatgpt", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ prompt: prompt.trim() }),
-      });
-
-      const data = await response.json();
-      console.log(response);
-      if (response.ok) {
-        setMessages([
-          {
-            text: data.result,
-            id: new Date().toISOString(),
-            author: "ai",
-          },
-        ]);
-        setPrompt("");
-      } else {
-        console.warn("API response error:", data.error?.message);
-      }
-    } catch (error) {
-      console.error("Network or parsing error:", error);
-    }
+    const url = prompt;
+    const response = await fetch("/api/youtube", {
+      method: "POST",
+      body: JSON.stringify({ url }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    const comments = await response.json();
+    setMessages(comments);
   };
-
   //   useEffect(() => {
   //     axios
   //       .post(
@@ -119,30 +98,37 @@ export default function InputForm() {
       <div className="flex justify-center mt-4">
         <SubmitButton onClick={handleSubmit} />
       </div>
-      <div className="answers">
-        {messages.map((message) => (
-          <MessageItem key={message.id} message={message} />
+      <div className="answers"></div>
+      <div className="w-full max-w-2xl mx-auto bg-white dark:bg-gray-800 p-6 rounded-md shadow-md">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+          Review
+        </h2>
+        {messages.map((message, index) => (
+          <p key={index} className="text-gray-700 dark:text-gray-300">
+            {index}:{message}
+            <br />
+          </p>
         ))}
       </div>
     </>
   );
 }
 
-function MessageItem({ message }) {
-  const [text, setText] = useState(
-    message.author === "human" ? message.text : ""
-  );
+// function MessageItem({ message }) {
+//   const [text, setText] = useState(
+//     message.author === "human" ? message.text : ""
+//   );
 
-  useEffect(() => {
-    setTimeout(() => {
-      setText(message.text.slice(0, text.length + 1));
-    }, 10);
-  }, [text, message.text]);
+//   useEffect(() => {
+//     setTimeout(() => {
+//       setText(message.text.slice(0, text.length + 1));
+//     }, 10);
+//   }, [text, message.text]);
 
-  return (
-    <div className="answer">
-      <div className={`author author-${message.author}`}>{message.author}:</div>
-      <div className="message">{text}</div>
-    </div>
-  );
-}
+//   return (
+//     <div className="answer">
+//       <div className={`author author-${message.author}`}>{message.author}:</div>
+//       <div className="message">{text}</div>
+//     </div>
+//   );
+// }
